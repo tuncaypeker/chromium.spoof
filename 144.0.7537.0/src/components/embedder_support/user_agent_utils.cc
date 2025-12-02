@@ -4,6 +4,8 @@
 
 #include "components/embedder_support/user_agent_utils.h"
 
+#include "base/json/json_reader.h"
+
 #include <stdint.h>
 
 #include <array>
@@ -693,6 +695,111 @@ blink::UserAgentMetadata GetUserAgentMetadata(bool only_low_entropy_ch) {
   if (only_low_entropy_ch) {
     return metadata;
   }
+
+  // =============================================================
+  // ##SPOOF LAYER 1##: Override UA-CH metadata via command line
+  // =============================================================
+  const base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
+  if (cmd->HasSwitch("fp_uach_json")) {
+    std::string json = cmd->GetSwitchValueASCII("fp_uach_json");
+
+    if (!json.empty()) {
+       auto parsed = base::JSONReader::Read(json, base::JSON_ALLOW_TRAILING_COMMAS);
+
+      if (parsed && parsed->is_dict()) {
+        const base::Value::Dict& dict = parsed->GetDict();
+        blink::UserAgentMetadata spoof;
+
+       if (auto* list = dict.FindList("fullVersionList")) {
+          spoof.brand_full_version_list.clear();
+          for (auto& v : *list) {
+            if (v.is_dict()) {
+              blink::UserAgentBrandVersion b;
+
+              if (const std::string* brand = v.GetDict().FindString("brand")) {
+                b.brand = *brand;
+              } else {
+                b.brand = "";
+              }
+
+              if (const std::string* version =
+                      v.GetDict().FindString("version")) {
+                b.version = *version;
+              } else {
+                b.version = "";
+              }
+
+              spoof.brand_full_version_list.push_back(std::move(b));
+            }
+          }
+        }
+
+        if (auto* fv = dict.FindString("fullVersion")) {
+          spoof.full_version = *fv;
+        }
+
+        if (auto* arch = dict.FindString("architecture")) {
+          spoof.architecture = *arch;
+        }
+
+        if (auto* bit = dict.FindString("bitness")) {
+          spoof.bitness = *bit;
+        }
+
+        if (auto* m = dict.FindString("model")) {
+          spoof.model = *m;
+        }
+
+        if (auto* pfv = dict.FindString("platformVersion")) {
+          spoof.platform_version = *pfv;
+        }
+
+        if (auto* wow = dict.FindString("wow64")) {
+          spoof.wow64 = (*wow == "true");
+        }
+
+        // Low entropy values must also be preserved or spoofed
+        if (auto* pf = dict.FindString("platform")) {
+          spoof.platform = *pf;
+        }
+
+        if (auto* mob = dict.FindString("mobile")) {
+          spoof.mobile = (*mob == "true");
+        }
+
+       if (auto* brands = dict.FindList("brandVersionList")) {
+          spoof.brand_version_list.clear();
+          for (auto& v : *brands) {
+            if (v.is_dict()) {
+              blink::UserAgentBrandVersion b;
+
+              // brand
+              if (const std::string* brand = v.GetDict().FindString("brand")) {
+                b.brand = *brand;
+              } else {
+                b.brand = "";
+              }
+
+              // version
+              if (const std::string* version =
+                      v.GetDict().FindString("version")) {
+                b.version = *version;
+              } else {
+                b.version = "";
+              }
+
+              spoof.brand_version_list.push_back(std::move(b));
+            }
+          }
+        }
+
+        return spoof;
+      }
+    }
+  }
+  // =============================================================
+  // ##SPOOF LAYER 1 END##
+  // =============================================================
 
   // High entropy client hints.
   metadata.brand_full_version_list =
