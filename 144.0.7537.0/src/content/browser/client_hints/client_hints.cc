@@ -8,8 +8,10 @@
 #include <optional>
 #include <string>
 
-#include "base/check_is_test.h"
+#include "base/check_is_test.h" 
 #include "base/command_line.h"
+#include "base/json/json_reader.h"
+#include "base/values.h"
 #include "base/containers/contains.h"
 #include "base/dcheck_is_on.h"
 #include "base/feature_list.h"
@@ -710,6 +712,66 @@ void UpdateNavigationRequestClientUaHeadersImpl(
   if (!disable_due_to_custom_ua) {
     if (!ua_metadata.has_value())
       ua_metadata = delegate->GetUserAgentMetadata();
+
+    // ##SPOOF##: Override UA Metadata from command line JSON
+    const base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
+    if (cmd->HasSwitch("fp_uach_json")) {
+      std::string json = cmd->GetSwitchValueASCII("fp_uach_json");
+
+      if (!json.empty()) {
+        auto parsed = base::JSONReader::Read(json, base::JSON_ALLOW_TRAILING_COMMAS);
+        if (parsed && parsed->is_dict()) {
+          const base::Value::Dict& dict = parsed->GetDict();
+          blink::UserAgentMetadata override;
+
+          if (auto* fv = dict.FindString("fullVersion")) {
+            override.full_version = *fv;
+          }
+
+          if (auto* pf = dict.FindString("platform")) {
+            override.platform = *pf;
+          }
+
+          if (auto* arch = dict.FindString("architecture")) {
+            override.architecture = *arch;
+          }
+
+          if (auto* bit = dict.FindString("bitness")) {
+            override.bitness = *bit;
+          }
+
+          if (auto* model = dict.FindString("model")) {
+            override.model = *model;
+          }
+
+          if (auto* list = dict.FindList("fullVersionList")) {
+            override.brand_full_version_list.clear();
+            for (auto& v : *list) {
+              if (v.is_dict()) {
+                blink::UserAgentBrandVersion b;
+                if (const std::string* brand =
+                        v.GetDict().FindString("brand")) {
+                  b.brand = *brand;
+                } else {
+                  b.brand = "";
+                }
+
+                if (const std::string* version =
+                        v.GetDict().FindString("version")) {
+                  b.version = *version;
+                } else {
+                  b.version = "";
+                }
+                override.brand_full_version_list.push_back(std::move(b));
+              }
+            }
+          }
+
+          ua_metadata = override;
+        }
+      }
+    }
+    // ##SPOOF## END
 
     // The `Sec-CH-UA` client hint is attached to all outgoing requests. This is
     // (intentionally) different than other client hints.
