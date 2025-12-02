@@ -7,7 +7,7 @@ Each module shows before → after behavior, the exact patch logic, and test out
 🎯 Purpose  
 --
 To keep a clear, version-controlled record of:  
-The spoof patches we add to Chromium (C++, GN args, build flags)  
+The spoof patches I add to Chromium (C++, GN args, build flags)  
 Their expected outcomes  
 Test results before/after the patch  
 Known issues, crashes, or edge-case behaviors  
