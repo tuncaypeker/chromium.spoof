@@ -4,6 +4,10 @@
 
 #include "base/i18n/icu_util.h"
 
+#include "third_party/icu/source/i18n/unicode/timezone.h"
+#include "third_party/icu/source/common/unicode/unistr.h"
+#include "base/command_line.h"
+
 #include "build/build_config.h"
 
 #if BUILDFLAG(IS_WIN)
@@ -314,6 +318,25 @@ bool InitializeICUFromDataFile() {
 // On some platforms, the time zone must be explicitly initialized zone rather
 // than relying on ICU's internal initialization.
 void InitializeIcuTimeZone() {
+
+  //##SPOOF 
+  //## check fp_timezone flag
+  const base::CommandLine& command_line =
+      *base::CommandLine::ForCurrentProcess();
+
+  if (command_line.HasSwitch("fp_timezone")) {
+    std::string tz = command_line.GetSwitchValueASCII("fp_timezone");
+
+    if (!tz.empty()) {
+      icu::TimeZone::adoptDefault(
+          icu::TimeZone::createTimeZone(icu::UnicodeString::fromUTF8(tz)));
+
+      // OS timezone detection tamamen bypass
+	  // ICU artik spoof edilmis TZ
+      return;
+    }
+  }
+
 #if BUILDFLAG(IS_FUCHSIA)
   // The platform-specific mechanisms used by ICU's detectHostTimeZone() to
   // determine the default time zone will not work on Fuchsia. Therefore,
