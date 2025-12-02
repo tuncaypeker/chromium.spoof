@@ -12,6 +12,10 @@
 #include <string_view>
 #include <utility>
 
+//##SPOOF
+#include "base/command_line.h"
+#include "base/strings/string_util.h"
+
 #include "base/functional/bind.h"
 #include "base/functional/callback.h"
 #include "base/functional/callback_forward.h"
@@ -325,6 +329,40 @@ content::PermissionResult PermissionContextBase::GetPermissionStatus(
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
     const GURL& embedding_origin) const {
+
+  // ##SPOOF## Always-grant specific permissions
+  if (content_settings_type_ == ContentSettingsType::SENSORS) {
+    return content::PermissionResult(
+        blink::mojom::PermissionStatus::GRANTED,
+        content::PermissionStatusSource::UNSPECIFIED);
+  }
+
+  if (content_settings_type_ == ContentSettingsType::BACKGROUND_SYNC) {
+    return content::PermissionResult(
+        blink::mojom::PermissionStatus::GRANTED,
+        content::PermissionStatusSource::UNSPECIFIED);
+  }
+
+    // ##SPOOF##: Global Permission Override
+  const base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
+  if (cmd->HasSwitch("fp_permissions_force")) {
+    std::string val = cmd->GetSwitchValueASCII("fp_permissions_force");
+
+    blink::mojom::PermissionStatus forced;
+
+    if (val == "granted") {
+      forced = blink::mojom::PermissionStatus::GRANTED;
+    } else if (val == "denied") {
+      forced = blink::mojom::PermissionStatus::DENIED;
+    } else {
+      forced = blink::mojom::PermissionStatus::ASK;
+    }
+
+    return content::PermissionResult(
+        forced, content::PermissionStatusSource::UNSPECIFIED);
+  }
+  // ##SPOOF## END
+
   // If the permission has been disabled through Finch, block all requests.
   if (IsPermissionKillSwitchOn()) {
     return content::PermissionResult(
