@@ -4,8 +4,7 @@ Custom Chromium Build — Fingerprint Spoofing Patches
 This repository documents the custom fingerprint-spoofing work applied on top of a private Chromium build.
 Each module shows before → after behavior, the exact patch logic, and test outputs from major detection sites (iphey, pixelscan, fingerprint.com, browserleaks).
 
-🎯 Purpose
-
+🎯 Purpose  
 To keep a clear, version-controlled record of:  
 The spoof patches we add to Chromium (C++, GN args, build flags)  
 Their expected outcomes  
