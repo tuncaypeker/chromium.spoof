@@ -380,9 +380,11 @@ bool HttpUtil::IsMethodIdempotent(std::string_view method) {
 
 // static
 bool HttpUtil::IsSafeHeader(std::string_view name, std::string_view value) {
-  if (base::StartsWith(name, "proxy-", base::CompareCase::INSENSITIVE_ASCII) ||
-      base::StartsWith(name, "sec-", base::CompareCase::INSENSITIVE_ASCII))
-    return false;
+  //##SPOOF 
+  //if (base::StartsWith(name, "proxy-", base::CompareCase::INSENSITIVE_ASCII) ||
+      //base::StartsWith(name, "sec-", base::CompareCase::INSENSITIVE_ASCII))
+    //return false;
+  //---------------------------------------------------------------------------------
 
   for (const char* field : kForbiddenHeaderFields) {
     if (base::EqualsCaseInsensitiveASCII(name, field))
