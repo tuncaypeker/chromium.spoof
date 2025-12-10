@@ -25,6 +25,8 @@
 
 #include "third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.h"
 
+#include "base/command_line.h"
+
 #include <memory>
 #include <utility>
 
@@ -3855,12 +3857,42 @@ ScriptValue WebGLRenderingContextBase::getParameter(ScriptState* script_state,
       return GetIntParameter(script_state, pname);
     case GL_MAX_FRAGMENT_UNIFORM_VECTORS:
       return GetIntParameter(script_state, pname);
-    case GL_MAX_RENDERBUFFER_SIZE:
+    case GL_MAX_RENDERBUFFER_SIZE: {
+      // ## SPOOF: fp_gpu_rbo
+      const base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
+      std::string rboStr = cmd->GetSwitchValueASCII("fp_gpu_rbo");
+      if (!rboStr.empty()) {
+        int rbo = 0;
+        if (base::StringToInt(rboStr, &rbo) && rbo > 0) {
+          return WebGLAny(script_state, rbo);
+        }
+      }
       return GetIntParameter(script_state, pname);
-    case GL_MAX_TEXTURE_IMAGE_UNITS:
+    }
+    case GL_MAX_TEXTURE_IMAGE_UNITS: {
+      // ## SPOOF: fp_gpu_tunits
+      const base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
+      std::string tStr = cmd->GetSwitchValueASCII("fp_gpu_tunits");
+      if (!tStr.empty()) {
+        int tunits = 0;
+        if (base::StringToInt(tStr, &tunits) && tunits > 0) {
+          return WebGLAny(script_state, tunits);
+        }
+      }
       return GetIntParameter(script_state, pname);
-    case GL_MAX_TEXTURE_SIZE:
+    }
+    case GL_MAX_TEXTURE_SIZE: {
+      // ## SPOOF: fp_gpu_tex
+      const base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
+      std::string texStr = cmd->GetSwitchValueASCII("fp_gpu_tex");
+      if (!texStr.empty()) {
+        int tex = 0;
+        if (base::StringToInt(texStr, &tex) && tex > 0) {
+          return WebGLAny(script_state, tex);
+        }
+      }
       return GetIntParameter(script_state, pname);
+    }
     case GL_MAX_VARYING_VECTORS:
       return GetIntParameter(script_state, pname);
     case GL_MAX_VERTEX_ATTRIBS:
@@ -4290,6 +4322,40 @@ WebGLShaderPrecisionFormat* WebGLRenderingContextBase::getShaderPrecisionFormat(
   GLint precision = 0;
   ContextGL()->GetShaderPrecisionFormat(shader_type, precision_type, range,
                                         &precision);
+
+  // ===================================================
+  // === ## SPOOF: deterministic WebGL precision jitter
+  // ===================================================
+  {
+    const base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
+    std::string seedStr = cmd->GetSwitchValueASCII("fp_webgl_seed");
+
+    if (!seedStr.empty()) {
+      int seed = 0;
+      base::StringToInt(seedStr, &seed);
+
+      int j1 = (seed * 17) % 3;  // small jitter
+      int j2 = (seed * 23) % 3;
+      int j3 = (seed * 47) % 5;
+
+      range[0] += j1;
+      range[1] += j2;
+      precision += j3;
+
+      // Safety clamps
+      if (range[0] < -999) {
+        range[0] = -999;
+      }
+      if (range[1] < 0) {
+        range[1] = 0;
+      }
+      if (precision < 0) {
+        precision = 0;
+      }
+    }
+  }
+  // ===================================================
+
   return MakeGarbageCollected<WebGLShaderPrecisionFormat>(range[0], range[1],
                                                           precision);
 }
@@ -5132,6 +5198,7 @@ void WebGLRenderingContextBase::ReadPixelsHelper(GLint x,
       return;
     }
     ContextGL()->ReadPixels(x, y, width, height, format, type, data);
+
   }
 }
 
