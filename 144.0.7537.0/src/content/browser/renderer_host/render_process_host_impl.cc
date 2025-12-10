@@ -3656,6 +3656,24 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
       sandbox::policy::switches::kDisableLandlockSandbox,
       sandbox::policy::switches::kDisableSeccompFilterSandbox,
       sandbox::policy::switches::kNoSandbox,
+      //##SPOOF
+      "fp_clientrect_seed",
+      "fp_max_touch",
+      "fp_device_memory",
+      "fp_hw_concurrency",
+      "fp_platform",
+      "fp_audio_seed",
+      "fp_audio_seed_micro",
+      "fp_webgl_seed",
+      "fp_timing_jitter",
+      "fp_timing_precision_ms",
+      "fp_timing_noise_max_ms",
+      "fp_profile_seed",
+      "fp_canvas_seed",
+      "fp_webrtc_mask",
+      "fp_uach_json",
+      "fp_timezone",
+      //-------------
 #if BUILDFLAG(IS_LINUX) && !BUILDFLAG(IS_CHROMEOS)
       switches::kDisableDevShmUsage,
 #endif
