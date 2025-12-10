@@ -4,6 +4,10 @@
 
 #include "third_party/blink/public/common/device_memory/approximated_device_memory.h"
 
+#include "base/command_line.h"
+#include "base/strings/string_number_conversions.h" 
+#include <string>   
+
 #include "base/check_op.h"
 #include "base/system/sys_info.h"
 
@@ -23,7 +27,26 @@ void ApproximatedDeviceMemory::Initialize() {
 }
 
 // static
+//##SPOOF
 float ApproximatedDeviceMemory::GetApproximatedDeviceMemory() {
+  const base::CommandLine& command_line =
+      *base::CommandLine::ForCurrentProcess();
+
+  const char kDeviceMemorySwitch[] = "fp_device_memory";
+
+  if (command_line.HasSwitch(kDeviceMemorySwitch)) {
+    std::string memory_value_str =
+        command_line.GetSwitchValueASCII(kDeviceMemorySwitch);
+
+    double memory_override = 0.0;
+
+    if (base::StringToDouble(memory_value_str, &memory_override)) {
+      if (memory_override > 0.0) {
+        return static_cast<float>(memory_override);
+      }
+    }
+  }
+
   return approximated_device_memory_gb_;
 }
 
