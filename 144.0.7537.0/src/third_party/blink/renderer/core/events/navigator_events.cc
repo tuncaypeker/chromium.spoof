@@ -30,6 +30,9 @@
 
 #include "third_party/blink/renderer/core/events/navigator_events.h"
 
+#include "base/command_line.h"
+#include "base/strings/string_number_conversions.h"
+
 #include "third_party/blink/renderer/core/frame/local_dom_window.h"
 #include "third_party/blink/renderer/core/frame/local_frame.h"
 #include "third_party/blink/renderer/core/frame/navigator.h"
@@ -38,6 +41,18 @@
 namespace blink {
 
 int32_t NavigatorEvents::maxTouchPoints(Navigator& navigator) {
+  // ##SPOOF##: Command-line override for maxTouchPoints
+  const base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
+
+  if (cmd->HasSwitch("fp_max_touch")) {
+    std::string val = cmd->GetSwitchValueASCII("fp_max_touch");
+    int parsed = 0;
+    if (base::StringToInt(val, &parsed)) {
+      return parsed;
+    }
+  }
+  // ##SPOOF END##
+
   LocalDOMWindow* window = navigator.DomWindow();
   return window ? window->GetFrame()->GetSettings()->GetMaxTouchPoints() : 0;
 }
