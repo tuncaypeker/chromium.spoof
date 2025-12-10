@@ -32,6 +32,9 @@
 
 #include <utility>
 
+#include "base/command_line.h"
+#include "base/strings/string_number_conversions.h"
+
 #include "third_party/blink/renderer/bindings/core/v8/script_value.h"
 #include "third_party/blink/renderer/bindings/core/v8/v8_object_builder.h"
 #include "third_party/blink/renderer/bindings/modules/v8/v8_rtc_ice_candidate_init.h"
@@ -83,6 +86,14 @@ RTCIceCandidate::RTCIceCandidate(RTCIceCandidatePlatform* platform_candidate)
     : platform_candidate_(platform_candidate) {}
 
 String RTCIceCandidate::candidate() const {
+  // ##SPOOF## Prevent WebRTC local IP leak
+  const base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
+  if (cmd->HasSwitch("fp_webrtc_mask")) {
+    // Safe fake candidate (AdsPower-style)
+    return "candidate:0 1 udp 1 0.0.0.0 9 typ host";
+  }
+  // ##SPOOF END##
+
   return platform_candidate_->Candidate();
 }
 
