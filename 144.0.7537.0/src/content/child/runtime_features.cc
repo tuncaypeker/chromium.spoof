@@ -455,9 +455,10 @@ void SetRuntimeFeaturesFromCommandLine(const base::CommandLine& command_line) {
       {wrf::EnableTimerThrottlingForBackgroundTabs,
        switches::kDisableBackgroundTimerThrottling, false},
       // End of Stable Features
-      {wrf::EnableAutomationControlled, switches::kEnableAutomation, true},
-      {wrf::EnableAutomationControlled, switches::kHeadless, true},
-      {wrf::EnableAutomationControlled, switches::kRemoteDebuggingPipe, true},
+      // ##SPOOF
+      //{wrf::EnableAutomationControlled, switches::kEnableAutomation, true},
+      //{wrf::EnableAutomationControlled, switches::kHeadless, true},
+      //{wrf::EnableAutomationControlled, switches::kRemoteDebuggingPipe, true},
       {wrf::EnableFileSystem, switches::kDisableFileSystem, false},
       {wrf::EnableNetInfoDownlinkMax,
        switches::kEnableNetworkInformationDownlinkMax, true},
@@ -503,14 +504,15 @@ void SetRuntimeFeaturesFromCommandLine(const base::CommandLine& command_line) {
   // more likely for attaching a debugger, so we should leave
   // EnableAutomationControlled unset to ensure the browser behaves as it does
   // when not under automation control.
-  if (command_line.HasSwitch(switches::kRemoteDebuggingPort)) {
-    std::string port_str =
-        command_line.GetSwitchValueASCII(::switches::kRemoteDebuggingPort);
-    int port;
-    if (base::StringToInt(port_str, &port) && port == 0) {
-      WebRuntimeFeatures::EnableAutomationControlled(true);
-    }
-  }
+  // ##SPOOF: disable automation trigger via remote debugging port
+  // if (command_line.HasSwitch(switches::kRemoteDebuggingPort)) {
+  //   std::string port_str =
+  //       command_line.GetSwitchValueASCII(::switches::kRemoteDebuggingPort);
+  //   int port;
+  //   if (base::StringToInt(port_str, &port) && port == 0) {
+  //     WebRuntimeFeatures::EnableAutomationControlled(true);
+  //   }
+  // }
 }
 
 // Sets blink runtime features that depend on a combination
