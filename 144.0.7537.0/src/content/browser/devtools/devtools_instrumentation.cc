@@ -4,6 +4,10 @@
 
 #include "content/browser/devtools/devtools_instrumentation.h"
 
+#include "base/command_line.h"
+#include "base/json/json_reader.h"
+#include "base/values.h"
+
 #include "base/containers/adapters.h"
 #include "base/feature_list.h"
 #include "base/notreached.h"
@@ -1443,6 +1447,65 @@ void ApplyNetworkRequestOverrides(
 bool ApplyUserAgentMetadataOverrides(
     FrameTreeNode* frame_tree_node,
     std::optional<blink::UserAgentMetadata>* override_out) {
+
+     // ##SPOOF## Force DevTools to use spoofed UA metadata
+  const base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
+  if (cmd->HasSwitch("fp_uach_json")) {
+    std::string json = cmd->GetSwitchValueASCII("fp_uach_json");
+    auto parsed = base::JSONReader::Read(json, base::JSON_ALLOW_TRAILING_COMMAS);
+
+    if (parsed && parsed->is_dict()) {
+      const base::Value::Dict& dict = parsed->GetDict();
+
+      blink::UserAgentMetadata spoof;
+
+      if (auto* fv = dict.FindString("fullVersion")) {
+        spoof.full_version = *fv;
+      }
+
+      if (auto* pf = dict.FindString("platform")) {
+        spoof.platform = *pf;
+      }
+
+      if (auto* arch = dict.FindString("architecture")) {
+        spoof.architecture = *arch;
+      }
+
+      if (auto* bit = dict.FindString("bitness")) {
+        spoof.bitness = *bit;
+      }
+
+      if (auto* model = dict.FindString("model")) {
+        spoof.model = *model;
+      }
+
+      if (auto* list = dict.FindList("fullVersionList")) {
+        for (auto& v : *list) {
+          if (v.is_dict()) {
+            blink::UserAgentBrandVersion b;
+            if (const std::string* brand = v.GetDict().FindString("brand")) {
+              b.brand = *brand;
+            } else {
+              b.brand = "";
+            }
+
+            if (const std::string* version =
+                    v.GetDict().FindString("version")) {
+              b.version = *version;
+            } else {
+              b.version = "";
+            }
+            spoof.brand_full_version_list.push_back(std::move(b));
+          }
+        }
+      }
+
+      *override_out = spoof;
+      return true;  // Bitti DevTools artik SADECE SPOOF gosterir
+    }
+  }
+  // ##SPOOF END##
+
   DevToolsAgentHostImpl* agent_host =
       GetDevToolsAgentHostForNetworkOverrides(frame_tree_node);
   if (!agent_host) {
