@@ -1,3 +1,4 @@
+
 // Copyright 2012 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
@@ -249,6 +250,12 @@ static const char* const kSwitchNames[] = {
     sandbox::policy::switches::kDisableGpuSandbox,
     sandbox::policy::switches::kDisableLandlockSandbox,
     sandbox::policy::switches::kNoSandbox,
+    //##SPOOF
+    "fp_gpu_vendor",
+    "fp_gpu_renderer",
+    "fp_gpu_tex",     // MAX_TEXTURE_SIZE
+    "fp_gpu_rbo",     // MAX_RENDERBUFFER_SIZE
+    "fp_gpu_tunits",  // MAX_TEXTURE_IMAGE_UNITS
 #if BUILDFLAG(IS_WIN)
     sandbox::policy::switches::kAllowThirdPartyModules,
 #endif
@@ -1273,6 +1280,45 @@ bool GpuProcessHost::LaunchGpuProcess() {
 
   base::CommandLine::StringType gpu_launcher =
       browser_command_line.GetSwitchValueNative(switches::kGpuLauncher);
+
+  // ##SPOOF
+  if (browser_command_line.HasSwitch("fp_gpu_renderer")) {
+    std::string spoof =
+        browser_command_line.GetSwitchValueASCII("fp_gpu_renderer");
+    if (!spoof.empty()) {
+      // GPU process baslmadan once environment'a yaz
+      SetEnvironmentVariableA("FP_GPU_RENDERER", spoof.c_str());
+    }
+  }
+  if (browser_command_line.HasSwitch("fp_gpu_vendor")) {
+    std::string spoof =
+        browser_command_line.GetSwitchValueASCII("fp_gpu_vendor");
+    if (!spoof.empty()) {
+      // GPU process baslmadan once environment'a yaz
+      SetEnvironmentVariableA("FP_GPU_VENDOR", spoof.c_str());
+    }
+  }
+  if (browser_command_line.HasSwitch("fp_gpu_tex")) {
+    auto val = browser_command_line.GetSwitchValueASCII("fp_gpu_tex");
+    if (!val.empty()) {
+      SetEnvironmentVariableA("FP_GPU_TEX", val.c_str());
+    }
+  }
+
+  if (browser_command_line.HasSwitch("fp_gpu_rbo")) {
+    auto val = browser_command_line.GetSwitchValueASCII("fp_gpu_rbo");
+    if (!val.empty()) {
+      SetEnvironmentVariableA("FP_GPU_RBO", val.c_str());
+    }
+  }
+
+  if (browser_command_line.HasSwitch("fp_gpu_tunits")) {
+    auto val = browser_command_line.GetSwitchValueASCII("fp_gpu_tunits");
+    if (!val.empty()) {
+      SetEnvironmentVariableA("FP_GPU_TUNITS", val.c_str());
+    }
+  }
+  //-------------------------------
 
 #if BUILDFLAG(IS_ANDROID)
   // crbug.com/447735. readlink("self/proc/exe") sometimes fails on Android
