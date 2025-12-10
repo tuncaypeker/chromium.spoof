@@ -931,7 +931,9 @@ const char kEnableAggressiveDOMStorageFlushing[] =
     "enable-aggressive-domstorage-flushing";
 
 // Enable indication that browser is controlled by automation.
-const char kEnableAutomation[] = "enable-automation";
+//const char kEnableAutomation[] = "enable-automation";
+//## SPOOF
+const char kEnableAutomation[] = "fp_disable_enable_automation";
 
 #if BUILDFLAG(IS_IOS)
 // For mobile devices, tests should include a viewport meta tag to specify page
