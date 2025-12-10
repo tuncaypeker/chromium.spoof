@@ -4,8 +4,10 @@
 
 #include "third_party/blink/renderer/modules/webaudio/offline_audio_destination_handler.h"
 
+// ##SPOOF##
 #include <algorithm>
 
+#include "base/command_line.h"
 #include "base/compiler_specific.h"
 #include "base/trace_event/typed_macros.h"
 #include "media/base/audio_bus.h"
@@ -306,6 +308,53 @@ bool OfflineAudioDestinationHandler::RenderIfNotSuspended(
   if (!rendered_bus) {
     destination_bus->Zero();
   } else if (rendered_bus != destination_bus) {
+    // ##SPOOF##
+    // ====== FP AUDIOCONTEXT JITTER (NATIVE) ======
+    {
+      const base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
+      std::string seedStr = cmd->GetSwitchValueASCII("fp_audio_seed");
+      std::string microStr = cmd->GetSwitchValueASCII("fp_audio_seed_micro");
+
+      if (!seedStr.empty() && rendered_bus) {
+        bool microMode = (!microStr.empty() && microStr == "1");
+
+        int channels = rendered_bus->NumberOfChannels();
+        unsigned frames = rendered_bus->length();
+
+        if (microMode) {
+          // ===== MIKRO MODE (CHROME-CLUSTER SAFE) =====
+          uint32_t seed = static_cast<uint32_t>(std::stoul(seedStr));
+
+          for (int ch = 0; ch < channels; ++ch) {
+            float* buf = rendered_bus->Channel(ch)->MutableData();
+
+            for (unsigned i = 0; i < frames; ++i) {
+              // deterministic LCG
+              seed = seed * 1664525u + 1013904223u;
+
+              // tiny jitter in [-1e-9, 1e-9]
+              float jitter = ((seed & 0xFF) - 128) * 1e-9f;
+              buf[i] += jitter;
+            }
+          }
+
+        } else {
+          // ===== LEGACY MODE (GLOBAL OFFSET NOISE) =====
+          int seed = atoi(seedStr.c_str());
+          float noise = (seed % 17) * 1e-7f;  // deterministic global noise
+
+          for (int ch = 0; ch < channels; ++ch) {
+            float* buf = rendered_bus->Channel(ch)->MutableData();
+            for (unsigned i = 0; i < frames; ++i) {
+              buf[i] += noise;
+            }
+          }
+        }
+      }
+    }
+    // ==============================================
+
+
     // in-place processing was not possible - so copy
     destination_bus->CopyFrom(*rendered_bus);
   }
