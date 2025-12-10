@@ -4,6 +4,8 @@
 
 #include "services/device/time_zone_monitor/time_zone_monitor.h"
 
+#include "base/command_line.h"
+
 #include "base/logging.h"
 #include "base/memory/ptr_util.h"
 #include "base/trace_event/trace_event.h"
@@ -36,6 +38,14 @@ void TimeZoneMonitor::NotifyClients(std::string_view zone_id_str) {
 
 void TimeZoneMonitor::UpdateIcuAndNotifyClients(
     std::unique_ptr<icu::TimeZone> new_zone) {
+
+  //##SPOOF GUARD
+  const base::CommandLine& cmd = *base::CommandLine::ForCurrentProcess();
+  if (cmd.HasSwitch("fp_timezone")) {
+    // Biz spoof modundayiz OS timezone degistiyse bile ICU ayarini BOZMA
+    return;
+  }
+
   DCHECK(thread_checker_.CalledOnValidThread());
   TRACE_EVENT0("device", "TimeZoneMonitor::UpdateIcuAndNotifyClients");
 
