@@ -245,6 +245,11 @@ void ShowBadFlagsInfoBarHelper(content::WebContents* web_contents,
 }  // namespace
 
 void ShowBadFlagsPrompt(content::WebContents* web_contents) {
+
+//##SPOOF
+return;
+
+/*
 // On Android, ShowBadFlagsPrompt doesn't show the warning notification
 // for flags which are not available in about:flags.
 #if !BUILDFLAG(IS_ANDROID)
@@ -287,6 +292,8 @@ void ShowBadFlagsPrompt(content::WebContents* web_contents) {
       return;
     }
   }
+
+  */
 }
 
 void ShowBadFlagsInfoBar(content::WebContents* web_contents,
