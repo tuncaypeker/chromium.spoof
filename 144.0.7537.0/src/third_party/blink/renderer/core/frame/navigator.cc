@@ -23,6 +23,9 @@
 
 #include "third_party/blink/renderer/core/frame/navigator.h"
 
+// ##SPOOF##
+#include "base/command_line.h"
+
 #include "third_party/blink/public/common/user_agent/user_agent_metadata.h"
 #include "third_party/blink/renderer/bindings/core/v8/script_controller.h"
 #include "third_party/blink/renderer/core/dom/document.h"
@@ -68,6 +71,16 @@ String Navigator::platform() const {
   // mobile and desktop when ReduceUserAgent is enabled.
   if (!DomWindow())
     return NavigatorBase::platform();
+
+  // ##SPOOF##
+  const base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
+  std::string fpPlatform = cmd->GetSwitchValueASCII("fp_platform");
+
+  if (!fpPlatform.empty()) {
+    return AtomicString(fpPlatform.c_str());
+  }
+  // ##SPOOF END##
+
   const String& platform_override =
       DomWindow()->GetFrame()->GetSettings()->GetNavigatorPlatformOverride();
   return platform_override.empty() ? NavigatorBase::platform()
