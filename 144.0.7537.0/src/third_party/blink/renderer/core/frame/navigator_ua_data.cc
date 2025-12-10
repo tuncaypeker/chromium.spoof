@@ -4,6 +4,9 @@
 
 #include "third_party/blink/renderer/core/frame/navigator_ua_data.h"
 
+#include "base/command_line.h"
+#include "base/json/json_reader.h"
+
 #include "base/compiler_specific.h"
 #include "base/task/single_thread_task_runner.h"
 #include "third_party/blink/public/common/features.h"
@@ -139,6 +142,102 @@ bool AllowedToCollectHighEntropyValues(ExecutionContext* execution_context) {
 ScriptPromise<UADataValues> NavigatorUAData::getHighEntropyValues(
     ScriptState* script_state,
     const Vector<String>& hints) const {
+
+    // ##SPOOF## High Entropy UAData override
+  {
+    const base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
+    if (cmd->HasSwitch("fp_uach_json")) {
+      std::string json = cmd->GetSwitchValueASCII("fp_uach_json");
+      auto parsed = base::JSONReader::Read(json, 0);
+
+      if (parsed && parsed->is_dict()) {
+        const auto& dict = parsed->GetDict();
+
+        UADataValues* spoof_values = MakeGarbageCollected<UADataValues>();
+
+        // low entropy (always included)
+        spoof_values->setBrands(brand_set_);
+        spoof_values->setMobile(is_mobile_);
+
+        if (auto* pf = dict.FindString("platform")) {
+          spoof_values->setPlatform(String::FromUTF8(*pf));
+        } else {
+          spoof_values->setPlatform(platform_);
+        }
+
+        // high entropy
+        if (auto* pv = dict.FindString("platformVersion")) {
+          spoof_values->setPlatformVersion(String::FromUTF8(*pv));
+        }
+
+        if (auto* arch = dict.FindString("architecture")) {
+          spoof_values->setArchitecture(String::FromUTF8(*arch));
+        }
+
+        if (auto* bit = dict.FindString("bitness")) {
+          spoof_values->setBitness(String::FromUTF8(*bit));
+        }
+
+        if (auto* mf = dict.FindString("model")) {
+          spoof_values->setModel(String::FromUTF8(*mf));
+        }
+
+        if (auto* uf = dict.FindString("uaFullVersion")) {
+          spoof_values->setUaFullVersion(String::FromUTF8(*uf));
+        }
+
+        if (auto* list_value = dict.FindList("fullVersionList")) {
+          Vector<blink::UserAgentBrandVersion> spoofed_list;
+
+          for (const auto& entry : *list_value) {
+            if (!entry.is_dict()) {
+              continue;
+            }
+
+            const auto& entry_dict = entry.GetDict();
+
+            auto* brand_str = entry_dict.FindString("brand");
+            auto* version_str = entry_dict.FindString("version");
+
+            if (!brand_str || !version_str) {
+              continue;
+            }
+
+            blink::UserAgentBrandVersion bv;
+            bv.brand = *brand_str;      // std::string
+            bv.version = *version_str;  // std::string
+
+            spoofed_list.push_back(std::move(bv));
+          }
+
+          // --- NEW CODE: Convert to
+          // HeapVector<Member<NavigatorUABrandVersion>> ---
+          HeapVector<Member<NavigatorUABrandVersion>> heap_list;
+
+          for (const auto& bv : spoofed_list) {
+            auto* nav_brand = MakeGarbageCollected<NavigatorUABrandVersion>();
+
+            nav_brand->setBrand(String::FromUTF8(bv.brand.c_str()));
+            nav_brand->setVersion(String::FromUTF8(bv.version.c_str()));
+
+            heap_list.push_back(nav_brand);
+          }
+
+          spoof_values->setFullVersionList(std::move(heap_list));
+        }
+
+        // resolve promise immediately
+        auto* resolver =
+            MakeGarbageCollected<ScriptPromiseResolver<UADataValues>>(
+                script_state);
+
+        resolver->Resolve(spoof_values);
+        return resolver->Promise();
+      }
+    }
+  }
+  // ##SPOOF END##
+
   auto* resolver =
       MakeGarbageCollected<ScriptPromiseResolver<UADataValues>>(script_state);
   auto promise = resolver->Promise();
