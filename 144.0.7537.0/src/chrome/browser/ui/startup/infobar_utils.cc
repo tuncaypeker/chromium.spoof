@@ -79,8 +79,12 @@ bool ShouldShowBadFlagsSecurityWarnings() {
 // This is a separate function to avoid accidentally reading the switch from
 // `startup_command_line`.
 bool IsAutomationEnabled() {
-  return base::CommandLine::ForCurrentProcess()->HasSwitch(
-      switches::kEnableAutomation);
+
+  //## SPOOF
+  return false;
+
+  //return base::CommandLine::ForCurrentProcess()->HasSwitch(
+      //switches::kEnableAutomation);
 }
 
 // This is a separate function to avoid accidentally reading the switch from
