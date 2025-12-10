@@ -654,11 +654,13 @@
       base_feature: "none",
       origin_trial_feature_name: "AutoDarkMode",
     },
+    // ##SPOOF – disable blink automation mode
     {
       name: "AutomationControlled",
       base_feature: "none",
-      public: true,
-      settable_from_internals: true,
+      public: false,
+      settable_from_internals: false,
+      status: "test",
     },
     {
       name: "AutoPictureInPictureVideoHeuristics",
