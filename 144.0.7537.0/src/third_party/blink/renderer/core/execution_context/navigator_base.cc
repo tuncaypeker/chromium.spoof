@@ -4,6 +4,10 @@
 
 #include "third_party/blink/renderer/core/execution_context/navigator_base.h"
 
+// ##SPOOF##
+#include "base/command_line.h"
+#include "base/strings/string_number_conversions.h"
+
 #include "base/feature_list.h"
 #include "build/build_config.h"
 #include "third_party/blink/public/common/features.h"
@@ -97,6 +101,20 @@ void NavigatorBase::Trace(Visitor* visitor) const {
 }
 
 unsigned int NavigatorBase::hardwareConcurrency() const {
+  // ##SPOOF##: Command-line based HardwareConcurrency override (syntax fix)
+  const base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
+  std::string fpConcurrency = cmd->GetSwitchValueASCII("fp_hw_concurrency");
+
+  if (!fpConcurrency.empty()) {
+    int concurrency_override = 0;
+
+    if (base::StringToInt(fpConcurrency, &concurrency_override) &&
+        concurrency_override > 0) {
+      return static_cast<unsigned int>(concurrency_override);
+    }
+  }
+  // ##SPOOF## END
+
   unsigned int hardware_concurrency =
       NavigatorConcurrentHardware::hardwareConcurrency();
 
